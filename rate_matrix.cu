@@ -1,4 +1,4 @@
-__global__ rate_matrix(int *config, int *rate, species *all, )//species is a struct that holds reaction and diffusion rates
+__global__ rate_matrix(int *config, int *rate, species *all, )//species is a struct that holds reaction and diffusion rates of a species
 {
 	//element will be used for rate[index]
 	int element = blockIdx.x*blockDim.x + threadIdx.x; //index for this instance based on which core and thread is running
