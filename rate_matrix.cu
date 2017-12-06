@@ -18,7 +18,7 @@ __global__ void rate_matrix(int *config, int *rate, species *all)//species is a 
 */
 int sum_reactions(int element, int *config, species *all)
 {
-	int total_reactions = 0;
+	int total_reaction = 0;
 	
 	//assume there is a global variable N which is the number of sub-volumes
 	//find row of configuration matrix by element % N
@@ -29,12 +29,12 @@ int sum_reactions(int element, int *config, species *all)
 	for (i = 0; i < sizeOf(all); i++)
 		total_reactions = total_reactions + (config[row][i] * all[i].reaction_rate); //add last result to current result;
 	
-	return total_reactions;
+	return total_reaction;
 }
 
 int sum_reactions(int element, int *config, species *all)
 {
-	int total_reactions = 0;
+	int total_diffusion = 0;
 	
 	//assume there is a global variable N which is the number of sub-volumes
 	//find row of configuration matrix by element % N
@@ -43,7 +43,7 @@ int sum_reactions(int element, int *config, species *all)
 	//iterate through the columns of config and update total reactions.
 	int i;
 	for (i = 0; i < sizeOf(all); i++)
-		total_reactions = total_reactions + (config[row][i] * all[i].diffusion_rate); //add last result to current result;
+		total_diffusion = total_diffusion + (config[row][i] * all[i].diffusion_rate); //add last result to current result;
 	
-	return total_reactions;
+	return total_diffusion;
 }
