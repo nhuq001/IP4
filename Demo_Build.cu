@@ -19,12 +19,11 @@ __global__ void rate_matrix_1(int *config, int *rate, struct species *all)//spec
 		rate[element] = sum_diffusions(element, config, all);
 }
 
-__global__ void rate_matrix_2(int *rate)//species is a struct that holds reaction and diffusion rates of a species
+__global__ void rate_matrix_2(int *rate)
 {
 	//element will be used for rate[index]
-	int element = blockIdx.x*3+2;
-	if((element + 1) % 3 == 0) //third column
-		rate[element] = rate[element - 1] + rate[element - 2]; //sums reaction and diffusion rate for subvolume x.
+	int element = blockIdx.x*3+2; //get 3rd column of rate matrix
+	rate[element] = rate[element - 1] + rate[element - 2]; //sums reaction and diffusion rate for subvolume x.
 }
 
 int sum_reactions(int element, int *config, struct species *all)
