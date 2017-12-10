@@ -152,7 +152,7 @@ int main()
 	struct species types[2];
 	types[0].diffusion_rate = 1;	types[0].reaction_rate = 1;
 	types[1].diffusion_rate = 2;	types[1].reaction_rate = 2;
-	
+	int rate_matrix[(sv+1) * 8 * 3];
 	//parallelization starts here
 	
 	
