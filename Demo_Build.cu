@@ -69,9 +69,9 @@ __global__ void NSM (int *conn_Matrix, int *rate_Matrix, int *con_matrix, struct
   else if (r1 == 1)
       reaction(con_matrix, element);
   //update rate matrix
-  rate_matrix[element] = con_matrix[element] * all[0].diffusion + con_matrix[element + 1] * all[1].diffusion;
-  rate_matrix[element + 1] = con_matrix[element] * all[0]. reaction + con_matrix[element + 1] * all[0].reaction;
-  rate_matrix[element + 2] = rate_matrix[element + 1] + rate_matrix[element];
+  rate_matrix[element * 3] = con_matrix[element * 2] * all[0].diffusion + con_matrix[(element * 2) + 1] * all[1].diffusion;
+  rate_matrix[(element * 3) + 1] = con_matrix[element * 2] * all[0]. reaction + con_matrix[(element * 2) + 1] * all[1].reaction;
+  rate_matrix[(element * 3) + 2] = rate_matrix[(element * 3) + 1] + rate_matrix[element * 3];
 }
 
 void diffusion(int *conn_matrix, int *con_matrix, int element)
