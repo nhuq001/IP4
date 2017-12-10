@@ -63,7 +63,6 @@ int sum_diffusions(int element, int *config, struct species *all)
 
 __global__ void NSM (int connectivityMatrix, int rate_Matrix, int con_matrix, species all)
 {
-  srand(time(NULL));//needed for true random
   int element = blockIdx.x * blockDim.x + threadIdx.x; //assigns subvolume to thread.
   int r1 = rand() % 3; //will diffuse, react, or neither
   if(r1 == 0)
@@ -74,24 +73,23 @@ __global__ void NSM (int connectivityMatrix, int rate_Matrix, int con_matrix, sp
   rate_matrix[element] = con_matrix[element] * all[0].diffusion + con_matrix[element + 1] * all[1].diffusion;
   rate_matrix[element + 1] = con_matrix[element] * all[0]. reaction + con_matrix[element + 1] * all[0].reaction;
   rate_matrix[element + 2] = rate_matrix[element + 1] + rate_matrix[element];
-  
 }
 
 void diffusion(int conn_matrix, int con_matrix, int element)
 {
     //find random element in the conn_matrix
-    int r1 = rand(5);
-    sv2 = conn_matrix[element + r1] //diffusion target
-    int r2 = rand(1); //gives random column in configuration matrix
-    int r3 = rand(con_matrix[element + r2]; //take random amount of particle from sv1
-    int r4 = rand(con_matrix[sv2 + r2]; //take random amount of particle from sv2
+    int r1 = rand() % 6;
+    sv2 = conn_matrix[element + r1]; //diffusion target
+    int r2 = rand() % 2; //gives random column in configuration matrix
+    int r3 = rand() % con_matrix[element + r2]; //take random amount of particle from sv1
+    int r4 = rand() % con_matrix[sv2 + r2]; //take random amount of particle from sv2
     con_matrix[element + r2] = con_matrix[element + r2] + r4 - r3; //change amount in sv1
     con_matrix[sv2+ r2] = con_matrix[sv2+ r2] +r3 - r4; //change amount in sv2
 }
 
 void reaction(int con_matrix, int element)
 {
-	int r1 = rand(1);//get a random number to decide which reaction occurs
+	int r1 = rand() % 2;//get a random number to decide which reaction occurs
 	if(r1 == 0 && con_matrix[element] > 0) //a turns to b
 	{
 		con_matrix[element] = con_matrix[element] - 1;
@@ -102,57 +100,6 @@ void reaction(int con_matrix, int element)
 		con_matrix[element] = con_matrix[element] + 1;
 		con_matrix[element + 1] = con_matrix[element + 1] - 1;
 	}
-}
-
-__global__ void rate_matrix_1( int sv, int *config, int *rate, species *all)//species is a struct that holds reaction and diffusion rates of a species
-{
-	//element will be used for rate[index]
-	int element = blockIdx.x*blockDim.x + threadIdx.x; //index for this instance based on which core and thread is running
-													   // blockDim.x is the total amount of threads
-	if(element % 3 == 1) //first column
-		rate[element] = sum_reactions(sv, element, config, all); //sums reaction rate for subvolume x. Don't know how to find x yet in config
-	if(element % 3 == 2) //second column
-		rate[element] = sum_diffusions(sv, element, config, all); //sums diffusion rate for subvolume x. Don't know how to find x yet in config
-}
-
-__global__ void rate_matrix_2(int *config, int *rate, species *all)//species is a struct that holds reaction and diffusion rates of a species
-{
-	//element will be used for rate[index]
-	int element = blockIdx.x*3 + 2;
-	if(element % 3 == 0) //third column
-		rate[element] = rate[element - 1] + rate[element - 2]; //sums reaction and diffusion rate for subvolume x.
-}
-
-int sum_reactions(int sv, int element, int *config, species *all)
-{
-	int total_reaction = 0;
-	
-	//sv is the number of sub-volumes
-	//find row of configuration matrix by element % N
-	int row = element % sv;
-	
-	//iterate through the columns of config and update total reactions.
-	int i;
-	for (i = 0; i < sizeOf(all); i++)
-		total_reactions = total_reactions + (config[row * sv + i] * all[i].reaction_rate); //add last result to current result;
-	
-	return total_reaction;
-}
-
-int sum_reactions(int sv, int element, int *config, species *all)
-{
-	int total_diffusion = 0;
-	
-	//assume there is a global variable N which is the number of sub-volumes
-	//find row of configuration matrix by element % N
-	int row = element % sv;
-	
-	//iterate through the columns of config and update total reactions.
-	int i;
-	for (i = 0; i < sizeOf(all); i++)
-		total_diffusion = total_diffusion + (config[row * sv + i] * all[i].diffusion_rate); //add last result to current result;
-	
-	return total_diffusion;
 }
 
 void duplicate_connectivity_matrix(int dupes, int *original, int *clone)
@@ -205,5 +152,11 @@ int main()
 	struct species types[2];
 	types[0].diffusion_rate = 1;	types[0].reaction_rate = 1;
 	types[1].diffusion_rate = 2;	types[1].reaction_rate = 2;
+	
+	//parallelization starts here
+	
+	
+	
+	//parallelization ends here
     return 0;
 }
