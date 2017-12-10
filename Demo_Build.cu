@@ -14,9 +14,9 @@ __global__ void rate_matrix_1(int *config, int *rate, struct species *all)//spec
 	int element = blockIdx.x*blockDim.x + threadIdx.x; //index for this instance based on which core and thread is running
 													   // blockDim.x is the total amount of threads in a core
 	if((element + 1) % 3 == 1) //first column
-		rate[element] = sum_reactions(element, config, all); //sums reaction rate for subvolume x. Don't know how to find x yet in config
+		rate[element] = sum_reactions(element, config, all);
 	if((element + 1) % 3 == 2) //second column
-		rate[element] = sum_diffusions(element, config, all); //sums diffusion rate for subvolume x. Don't know how to find x yet in config
+		rate[element] = sum_diffusions(element, config, all);
 }
 
 __global__ void rate_matrix_2(int *rate)//species is a struct that holds reaction and diffusion rates of a species
@@ -61,7 +61,7 @@ int sum_diffusions(int element, int *config, struct species *all)
 
 
 
-__global__ void NSM (int connectivityMatrix, int rate_Matrix, int con_matrix, species all)
+__global__ void NSM (int *conn_Matrix, int *rate_Matrix, int *con_matrix, struct *species all)
 {
   int element = blockIdx.x * blockDim.x + threadIdx.x; //assigns subvolume to thread.
   int r1 = rand() % 3; //will diffuse, react, or neither
@@ -75,7 +75,7 @@ __global__ void NSM (int connectivityMatrix, int rate_Matrix, int con_matrix, sp
   rate_matrix[element + 2] = rate_matrix[element + 1] + rate_matrix[element];
 }
 
-void diffusion(int conn_matrix, int con_matrix, int element)
+void diffusion(int *conn_matrix, int *con_matrix, int element)
 {
     //find random element in the conn_matrix
     int r1 = rand() % 6;
@@ -87,7 +87,7 @@ void diffusion(int conn_matrix, int con_matrix, int element)
     con_matrix[sv2+ r2] = con_matrix[sv2+ r2] +r3 - r4; //change amount in sv2
 }
 
-void reaction(int con_matrix, int element)
+void reaction(int *con_matrix, int element)
 {
 	int r1 = rand() % 2;//get a random number to decide which reaction occurs
 	if(r1 == 0 && con_matrix[element] > 0) //a turns to b
@@ -102,7 +102,7 @@ void reaction(int con_matrix, int element)
 	}
 }
 
-void duplicate_connectivity_matrix(int dupes, int *original, int *clone)
+void duplicate_connectivity_matrix(int dupes, int *original, int *clone) //make disconnected geometry that is identical to the first
 {
     int i, j, k; //necessary for loop index
     //first nested loop makes a copy of the first
@@ -116,7 +116,7 @@ void duplicate_connectivity_matrix(int dupes, int *original, int *clone)
                 clone[(j + 8) * 6 + k ] = clone[j * 6 + k] + 8;
 }
 
-void populate_subvolumes (int size, int *config)
+void populate_subvolumes (int size, int *config)//pass total amount in array and the array
 {
     int i;
     for (i = 0 ; i < size ; i++)
@@ -128,11 +128,9 @@ void populate_subvolumes (int size, int *config)
 
 int main()
 {
-    srand(time(NULL));
-    int sv;
-    printf("How many times would you like to clone the current connectivity matrix? ");
-    scanf("%d", &sv);
-    int con_matrix1 [8 * 6] = {			   //premade geometry for connectivity
+    srand(time(NULL)); //needed for random value
+    int sv = 10;
+    int con_matrix1 [8 * 6] = {			   //premade geometry for connectivity matrix
                               1,0,2,0,4,0, //1
                               1,0,3,1,5,1, //2
                               3,2,2,0,6,2, //3
