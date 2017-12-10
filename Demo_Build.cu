@@ -77,27 +77,28 @@ __global__ void NSM (int *conn_Matrix, int *rate_Matrix, int *con_matrix, struct
 void diffusion(int *conn_matrix, int *con_matrix, int element)
 {
     //find random element in the conn_matrix
+	int conn_element = element * 6;//gets row in connectivity matrix
     int r1 = rand() % 6;
-    sv2 = conn_matrix[element + r1]; //diffusion target
+    int sv2 = conn_matrix[conn_element + r1]; //diffusion target
     int r2 = rand() % 2; //gives random column in configuration matrix
-    int r3 = rand() % con_matrix[element + r2]; //take random amount of particle from sv1
-    int r4 = rand() % con_matrix[sv2 + r2]; //take random amount of particle from sv2
-    con_matrix[element + r2] = con_matrix[element + r2] + r4 - r3; //change amount in sv1
-    con_matrix[sv2+ r2] = con_matrix[sv2+ r2] +r3 - r4; //change amount in sv2
+    int r3 = rand() % con_matrix[(element * 2) + r2]; //take random amount of particle from sv1
+    int r4 = rand() % con_matrix[(sv2 * 2) + r2]; //take random amount of particle from sv2
+    con_matrix[(element * 2) + r2] = con_matrix[(element * 2) + r2] + r4 - r3; //change amount in sv1
+    con_matrix[(sv2 * 2) + r2] = con_matrix[(sv2 * 2) + r2] + r3 - r4; //change amount in sv2
 }
 
 void reaction(int *con_matrix, int element)
 {
 	int r1 = rand() % 2;//get a random number to decide which reaction occurs
-	if(r1 == 0 && con_matrix[element] > 0) //a turns to b
+	if(r1 == 0 && con_matrix[element * 2] > 0) //a turns to b
 	{
-		con_matrix[element] = con_matrix[element] - 1;
-		con_matrix[element + 1] = con_matrix[element + 1] + 1;
+		con_matrix[element * 2] = con_matrix[element * 2] - 1;
+		con_matrix[(element * 2) + 1] = con_matrix[(element * 2) + 1] + 1;
 	}
-	else if(r1 == 1 && con_matrix[element + 1] > 0)
+	else if(r1 == 1 && con_matrix[(element * 2) + 1] > 0)
 	{
-		con_matrix[element] = con_matrix[element] + 1;
-		con_matrix[element + 1] = con_matrix[element + 1] - 1;
+		con_matrix[element * 2] = con_matrix[element * 2] + 1;
+		con_matrix[(element * 2 ) + 1] = con_matrix[(element * 2 )+ 1] - 1;
 	}
 }
 
