@@ -153,7 +153,7 @@ int main()
 	int rate_matrix[(sv+1) * 8 * 3];
 	//parallelization starts here
 	
-	/*rate_matrix1
+	/*rate_matrix_1
     float* gpuA;
     cudaMalloc(&gpuA, N*sizeof(float)); // Allocate enough memory on the GPU
     cudaMemcpy(gpuA, a, N*sizeof(float), cudaMemcpyHostToDevice); // Copy array from CPU to GPU
@@ -162,10 +162,10 @@ int main()
     cudaFree(&gpuA); // Free the memory on the GPU
 	  rate_matrix 1*/
 	
-	/*rate_matrix2
+	/*rate_matrix_2
 	cudaMalloc(&gpuA, N*sizeof(float)); // Allocate enough memory on the GPU
     cudaMemcpy(gpuA, a, N*sizeof(float), cudaMemcpyHostToDevice); // Copy array from CPU to GPU
-    rate_matrix2<<<numCores, numThreads>>>(rate_matrix);  // Call GPU Sqrt
+    rate_matrix_2<<<numCores, numThreads>>>(rate_matrix);  // Call GPU Sqrt
     cudaMemcpy(a, gpuA, N*sizeof(float), cudaMemcpyDeviceToHost); // Copy array from GPU to CPU
     cudaFree(&gpuA); // Free the memory on the GPU
 	  rate_matrix2*/
@@ -173,7 +173,7 @@ int main()
 	/*NSM Loop here as well
 	cudaMalloc(&gpuA, N*sizeof(float)); // Allocate enough memory on the GPU
     cudaMemcpy(gpuA, a, N*sizeof(float), cudaMemcpyHostToDevice); // Copy array from CPU to GPU
-    rate_matrix2<<<numCores, numThreads>>>(rate_matrix);  // Call GPU Sqrt
+    rate_matrix_2<<<numCores, numThreads>>>(rate_matrix);  // Call GPU Sqrt
     cudaMemcpy(a, gpuA, N*sizeof(float), cudaMemcpyDeviceToHost); // Copy array from GPU to CPU
     cudaFree(&gpuA); // Free the memory on the GPU
 	  NSM*/
