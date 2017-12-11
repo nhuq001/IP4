@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <time.h>
 
-struct species //holds diffusion and reaction rates for a species
+typedef struct species //holds diffusion and reaction rates for a species
 {
     int diffusion_rate;
     int reaction_rate;
-};
+}species;
 
 __device__ unsigned int RNG()
 {
@@ -55,6 +55,7 @@ __device__ int sum_diffusions(int element, int *config, struct species *all)
 
 __global__ void rate_matrix_1(int *config, int *rate, struct species *all)//species is a struct that holds reaction and diffusion rates of a species
 {
+	printf("Config [0] %i\n", config[0]);
 	//element will be used for rate[index]
 	int element = blockIdx.x*blockDim.x + threadIdx.x; //index for this instance based on which core and thread is running
 													   // blockDim.x is the total amount of threads in a core
@@ -191,17 +192,26 @@ int main()
 	struct species types[2];
 	types[0].diffusion_rate = 1;	types[0].reaction_rate = 1;
 	types[1].diffusion_rate = 2;	types[1].reaction_rate = 2;
-	int rate_matrix[(sv+1) * 8 * 3];
+	
+	int rate_matrix[(sv+1) * 8 * 3];//create rate matrix
 	//parallelization starts here
 	
-	/*rate_matrix_1
-    float* gpuA;
-    cudaMalloc(&gpuA, N*sizeof(float)); // Allocate enough memory on the GPU
-    cudaMemcpy(gpuA, a, N*sizeof(float), cudaMemcpyHostToDevice); // Copy array from CPU to GPU
-    rate_matrix1<<<numCores, numThreads>>>(config_matrix, rate_matrix, types);  // Call GPU Sqrt
-    cudaMemcpy(a, gpuA, N*sizeof(float), cudaMemcpyDeviceToHost); // Copy array from GPU to CPU
-    cudaFree(&gpuA); // Free the memory on the GPU
-	  rate_matrix 1*/
+	printf("Config Outside[0] %d\n", config_matrix[0]);
+    //rate_matrix_1
+	int *gpu_A;
+	int *gpu_B;
+	species *gpu_C;
+	cudaMalloc(&gpu_A, (sv + 1)*8*2*sizeof(int));
+	cudaMemcpy(gpu_A, &config_matrix, (sv + 1)*8*2*sizeof(int), cudaMemcpyHostToDevice);
+	cudaMalloc(&gpu_B, (sv + 1)*8*3*sizeof(int));
+	cudaMalloc(&gpu_C, 2*sizeof(species));
+	cudaMemcpy(gpu_C, &types, 2*sizeof(species), cudaMemcpyHostToDevice);
+	rate_matrix_1<<<1, 1>>>(config_matrix, rate_matrix, types);
+	cudaMemcpy(&rate_matrix, gpu_C, (sv + 1)*8*3*sizeof(int), cudaMemcpyDeviceToHost);
+	cudaFree(gpu_A);
+	cudaFree(gpu_B);
+	cudaFree(gpu_C);
+	
 	
 	/*rate_matrix_2
 	cudaMalloc(&gpuA, N*sizeof(float)); // Allocate enough memory on the GPU
@@ -210,10 +220,20 @@ int main()
     cudaMemcpy(a, gpuA, N*sizeof(float), cudaMemcpyDeviceToHost); // Copy array from GPU to CPU
     cudaFree(&gpuA); // Free the memory on the GPU
 	  rate_matrix2*/
+	  
+	/*printf("Initial Rate Matrix: \n");
+	for(k = 0; k < sv*8 + 8; k++)
+    {
+        printf("%d [", k);
+         for(j = 0; j < 2; j++)
+              printf("%d, ",rate_matrix[k*2 + j]);
+         printf("%d]\n", con_matrix2[k*2 + 2]);
+    }*/
 	
-	/*NSM Loop here as well
-	cudaMalloc(&gpuA, N*sizeof(float)); // Allocate enough memory on the GPU
-    cudaMemcpy(gpuA, a, N*sizeof(float), cudaMemcpyHostToDevice); // Copy array from CPU to GPU
+	
+	/*NSM
+	cudaMalloc((void**)&gpuA, N*sizeof(float)); // Allocate enough memory on the GPU
+    (gpuA, a, N*sizeof(float), cudaMemcpyHostToDevice); // Copy array from CPU to GPU
     rate_matrix_2<<<numCores, numThreads>>>(rate_matrix);  // Call GPU Sqrt
     cudaMemcpy(a, gpuA, N*sizeof(float), cudaMemcpyDeviceToHost); // Copy array from GPU to CPU
     cudaFree(&gpuA); // Free the memory on the GPU
