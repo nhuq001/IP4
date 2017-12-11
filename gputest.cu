@@ -1,6 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <emmintrin.h>
+#include <sys/time.h>
+
+//timing
+struct timeval start, end;
+
+void starttime() {
+  gettimeofday( &start, 0 );
+}
+
+void endtime(const char* c) {
+   gettimeofday( &end, 0 );
+   double elapsed = ( end.tv_sec - start.tv_sec ) * 1000.0 + ( end.tv_usec - start.tv_usec ) / 1000.0;
+   printf("%s: %f ms\n", c, elapsed); 
+}
 
 typedef struct species //holds diffusion and reaction rates for a species
 {
@@ -55,9 +70,9 @@ __device__ int sum_diffusions(int element, int *config, struct species *all)
 
 __global__ void rate_matrix_1(int *config, int *rate, struct species *all)//species is a struct that holds reaction and diffusion rates of a species
 {
-	printf("Config [0] %i\n", config[0]);
+	int element = blockIdx.x*blockDim.x + threadIdx.x;
 	//element will be used for rate[index]
-	int element = blockIdx.x*blockDim.x + threadIdx.x; //index for this instance based on which core and thread is running
+	//int element = blockIdx.x*blockDim.x + threadIdx.x; //index for this instance based on which core and thread is running
 													   // blockDim.x is the total amount of threads in a core
 	if((element + 1) % 3 == 1) //first column
 		rate[element] = sum_reactions(element, config, all);
@@ -152,7 +167,7 @@ void populate_subvolumes (int size, int *config)//pass total amount in array and
 int main()
 {
     srand(time(NULL)); //needed for random value
-    int sv = 1;
+    int sv = 50;
     int con_matrix1 [8 * 6] = {			   //premade geometry for connectivity matrix
                               1,0,2,0,4,0, //1
                               1,0,3,1,5,1, //2
@@ -196,56 +211,76 @@ int main()
 	int rate_matrix[(sv+1) * 8 * 3];//create rate matrix
 	//parallelization starts here
 	
-	printf("Config Outside[0] %d\n", config_matrix[0]);
+	starttime();
     //rate_matrix_1
 	int *gpu_A;
 	int *gpu_B;
+	int *gpu_D;
 	species *gpu_C;
 	cudaMalloc(&gpu_A, (sv + 1)*8*2*sizeof(int));
 	cudaMemcpy(gpu_A, &config_matrix, (sv + 1)*8*2*sizeof(int), cudaMemcpyHostToDevice);
 	cudaMalloc(&gpu_B, (sv + 1)*8*3*sizeof(int));
 	cudaMalloc(&gpu_C, 2*sizeof(species));
 	cudaMemcpy(gpu_C, &types, 2*sizeof(species), cudaMemcpyHostToDevice);
-	rate_matrix_1<<<1, 1>>>(config_matrix, rate_matrix, types);
-	cudaMemcpy(&rate_matrix, gpu_C, (sv + 1)*8*3*sizeof(int), cudaMemcpyDeviceToHost);
+	rate_matrix_1<<<(sv + 1)*8, 3>>>(gpu_A, gpu_B, gpu_C); //pass in pointers for 
+	cudaMemcpy(&rate_matrix, gpu_B, (sv + 1)*8*3*sizeof(int), cudaMemcpyDeviceToHost);
 	cudaFree(gpu_A);
 	cudaFree(gpu_B);
 	cudaFree(gpu_C);
 	
-	
-	/*rate_matrix_2
-	cudaMalloc(&gpuA, N*sizeof(float)); // Allocate enough memory on the GPU
-    cudaMemcpy(gpuA, a, N*sizeof(float), cudaMemcpyHostToDevice); // Copy array from CPU to GPU
-    rate_matrix_2<<<numCores, numThreads>>>(rate_matrix);  // Call GPU Sqrt
-    cudaMemcpy(a, gpuA, N*sizeof(float), cudaMemcpyDeviceToHost); // Copy array from GPU to CPU
-    cudaFree(&gpuA); // Free the memory on the GPU
-	  rate_matrix2*/
+	//rate_matrix_2
+	cudaMalloc(&gpu_A, (sv + 1)*8*3*sizeof(int)); // Allocate enough memory on the GPU
+    cudaMemcpy(gpu_A, &rate_matrix, (sv + 1)*8*3*sizeof(int), cudaMemcpyHostToDevice); // Copy array from CPU to GPU
+    rate_matrix_2<<<(sv+1)*8, 1>>>(gpu_A);  // Call GPU Sqrt
+    cudaMemcpy(&rate_matrix, gpu_A, (sv + 1)*8*3*sizeof(int), cudaMemcpyDeviceToHost); // Copy array from GPU to CPU
+    cudaFree(gpu_A); // Free the memory on the GPU
 	  
-	/*printf("Initial Rate Matrix: \n");
-	for(k = 0; k < sv*8 + 8; k++)
+	printf("Initial Rate Matrix: \n");
+	for(k = 0; k < (sv+1)*8; k++)
     {
         printf("%d [", k);
          for(j = 0; j < 2; j++)
               printf("%d, ",rate_matrix[k*2 + j]);
          printf("%d]\n", con_matrix2[k*2 + 2]);
-    }*/
+    }
 	
 	
-	/*NSM
-	cudaMalloc((void**)&gpuA, N*sizeof(float)); // Allocate enough memory on the GPU
-    (gpuA, a, N*sizeof(float), cudaMemcpyHostToDevice); // Copy array from CPU to GPU
-    rate_matrix_2<<<numCores, numThreads>>>(rate_matrix);  // Call GPU Sqrt
-    cudaMemcpy(a, gpuA, N*sizeof(float), cudaMemcpyDeviceToHost); // Copy array from GPU to CPU
-    cudaFree(&gpuA); // Free the memory on the GPU
-	  NSM*/
-	
+	//NSM Loop
+	for(k = 0; k < 101; k++)
+	{
+	cudaMalloc(&gpu_A, (sv + 1)*8*2*sizeof(int));
+	cudaMemcpy(gpu_A, &config_matrix, (sv + 1)*8*2*sizeof(int), cudaMemcpyHostToDevice);
+	cudaMalloc(&gpu_B, (sv + 1)*8*2*sizeof(int));
+	cudaMemcpy(gpu_B, &con_matrix2, (sv + 1)*8*6*sizeof(int), cudaMemcpyHostToDevice);
+	cudaMalloc(&gpu_D, (sv + 1)*8*3*sizeof(int));
+	cudaMemcpy(gpu_D, &rate_matrix, (sv + 1)*8*2*sizeof(int), cudaMemcpyHostToDevice);
+	cudaMalloc(&gpu_C, 2*sizeof(species));
+	cudaMemcpy(gpu_C, &types, 2*sizeof(species), cudaMemcpyHostToDevice);
+	NSM<<< (sv + 1), 8>>>(gpu_B, gpu_D, gpu_A, gpu_C);
+	cudaMemcpy(&rate_matrix, gpu_D, (sv + 1)*8*3*sizeof(int), cudaMemcpyDeviceToHost); // Copy array from GPU to CPU
+	cudaMemcpy(&config_matrix, gpu_B, (sv + 1)*8*2*sizeof(int), cudaMemcpyDeviceToHost);
+    cudaFree(gpu_A); // Free the memory on the GPU
+	cudaFree(gpu_B); // Free the memory on the GPU
+	cudaFree(gpu_C); // Free the memory on the GPU
+	cudaFree(gpu_D); // Free the memory on the GPU
+	}
 	//parallelization ends here
 	
 	printf("Altered Configuration Matrix:\n");
-	for(k = 0; k < sv*8 + 8; k++)
+	for(k = 0; k < (sv+1)*8; k++)
     {
         printf("%d [%d, %d]\n", k, config_matrix[k*2], config_matrix[(k*2)+1]);
     }
 	
+	printf("Altered Rate Matrix: \n");
+	for(k = 0; k < (sv+1)*8; k++)
+    {
+        printf("%d [", k);
+         for(j = 0; j < 2; j++)
+              printf("%d, ",rate_matrix[k*2 + j]);
+         printf("%d]\n", con_matrix2[k*2 + 2]);
+    }
+	
+	endtime("GPU");
     return 0;
 }
